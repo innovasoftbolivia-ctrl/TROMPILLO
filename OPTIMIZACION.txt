@@ -1,0 +1,67 @@
+======================================================================
+   OPTIMIZACIÓN DEL SISTEMA — Aerolínea El Trompillo
+======================================================================
+
+RESUMEN
+----------------------------------------------------------------------
+La app pasó de tardar 3–7 s por página (muy variable) a ~0,3 s constante.
+
+Dos problemas resueltos:
+
+1) ERRORES 404 en varios módulos (al entrar a "Nuevo/Crear")
+   Causa: los componentes Livewire de formulario (VueloForm, ReservaForm,
+   RutaForm, AeronaveForm, UsuarioForm, RolForm, etc.) usaban
+   `mount(?Modelo $x = null)` con el modelo tipado. En la ruta ".../crear"
+   (sin parámetro) eso disparaba el route-model binding y devolvía 404.
+   Arreglo: `mount($x = null)` sin type-hint + carga manual con
+   `Modelo::findOrFail($x)` cuando llega un id. Aplicado a los 12 forms.
+   Resultado: todas las rutas /crear y /{id}/editar responden 200.
+
+2) LENTITUD (3–7 s por página, muy variable)
+   Causa: con OPcache en `validate_timestamps=1`, PHP-FPM revisaba en disco
+   miles de archivos de vendor/ en CADA request. Sobre el bind-mount de
+   Docker en Windows ese acceso a disco es lento e inconsistente.
+   (Un archivo estático servido por nginx tardaba 0,01 s; /login en PHP,
+    sin apenas base de datos, tardaba 3–6 s: el costo era el filesystem.)
+
+   Arreglo (varias capas):
+   a) OPcache afinado  -> docker/php/zz-perf.ini (montado en docker-compose)
+        opcache.validate_timestamps = 0   (no vuelve a mirar el disco)
+        opcache.max_accelerated_files = 30000
+        opcache.memory_consumption = 256
+        realpath_cache_size = 8M, ttl = 600
+   b) Cachés de Laravel: config:cache, route:cache, view:cache, event:cache
+   c) Autoloader optimizado: composer dump-autoload -o
+   d) Dashboard: se agruparon ~9 consultas sueltas en 3 consultas agrupadas.
+
+
+IMPORTANTE — CÓMO VER LOS CAMBIOS DE CÓDIGO
+----------------------------------------------------------------------
+Como OPcache ya NO revisa el disco (validate_timestamps=0) y la config/rutas/
+vistas están cacheadas, si editas código, .env, rutas o vistas los cambios
+NO se ven hasta reconstruir cachés y reiniciar PHP. Un solo comando:
+
+  docker compose exec app sh -c "php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan event:cache" && docker compose restart app
+
+(Si solo cambiaste código PHP y no config/rutas/vistas, basta:
+   docker compose restart app )
+
+
+MODO DESARROLLO (ver cambios al instante, más lento)
+----------------------------------------------------------------------
+Si vas a programar mucho y prefieres ver los cambios sin reiniciar:
+  1) En docker/php/zz-perf.ini pon:  opcache.validate_timestamps=1
+  2) docker compose exec app php artisan optimize:clear
+  3) docker compose restart app
+Recuerda volver a 0 y re-cachear para el modo rápido.
+
+
+RECOMENDACIONES PARA PRODUCCIÓN (empresa real)
+----------------------------------------------------------------------
+  - En .env: APP_ENV=production y APP_DEBUG=false (seguridad + algo de
+    velocidad; evita filtrar trazas de error).
+  - Servir el código desde el propio contenedor (no bind-mount) o usar un
+    volumen; el bind-mount de Windows es el mayor freno.
+  - Mantener las cachés (config/route/view/event) siempre activas.
+
+======================================================================

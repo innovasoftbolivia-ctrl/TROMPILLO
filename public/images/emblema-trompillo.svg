@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 22 170 226" role="img" aria-label="Emblema Aerolínea El Trompillo">
+  <defs>
+    <clipPath id="shieldEmblema">
+      <path d="M48,80 Q48,66 62,64 L178,64 Q192,66 192,80 L192,150 Q192,205 120,238 Q48,205 48,150 Z"/>
+    </clipPath>
+  </defs>
+
+  <rect x="40" y="64" width="160" height="64" fill="#008225" clip-path="url(#shieldEmblema)"/>
+  <rect x="40" y="128" width="160" height="48" fill="#ffffff" clip-path="url(#shieldEmblema)"/>
+  <rect x="40" y="176" width="160" height="64" fill="#008225" clip-path="url(#shieldEmblema)"/>
+
+  <path d="M48,80 Q48,66 62,64 L178,64 Q192,66 192,80 L192,150 Q192,205 120,238 Q48,205 48,150 Z" fill="none" stroke="#bf9526" stroke-width="3"/>
+
+  <rect x="84" y="54" width="72" height="10" rx="3" fill="#a67d1f"/>
+  <path d="M84,58 L96,34 L110,54 L120,30 L130,54 L144,34 L156,58 Z" fill="#d0aa3d"/>
+  <circle cx="96" cy="34" r="3" fill="#008225"/>
+  <circle cx="120" cy="30" r="3.5" fill="#008225"/>
+  <circle cx="144" cy="34" r="3" fill="#008225"/>
+
+  <circle cx="120" cy="152" r="33" fill="#ffffff" stroke="#008225" stroke-width="2"/>
+  <path d="M144,131 L108,151 L126,159 L120,173 Z" fill="#008225"/>
+  <path d="M144,131 L126,159" fill="none" stroke="#c6e6cf" stroke-width="1.5"/>
+</svg>

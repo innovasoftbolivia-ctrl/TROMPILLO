@@ -1,0 +1,202 @@
+======================================================================
+   CÓMO PROBAR TODOS LOS MÓDULOS — Aerolínea El Trompillo
+   (guía paso a paso con los datos de demostración ya cargados)
+======================================================================
+
+Antes de empezar:
+  - Entrá en http://localhost:8080/login como ADMIN
+      admin@aerolinea.test  /  password
+  - Recargá con Ctrl+Shift+R la primera vez.
+
+Datos que ya existen y podés usar en los ejemplos:
+  - Aeropuertos: El Trompillo (SLET), Trinidad (SLTR), Guayaramerín (SLGY),
+    Cobija (SLCO), Riberalta (SLRI), La Paz (SLLP), Cochabamba (SLCB),
+    Sucre (SLSU), Tarija (SLTJ), Viru Viru (SLVR).
+  - Flota: CP-2521, CP-1987, CP-2765, CP-3140 (en mantenimiento),
+    CP-1899, CP-2200, CP-3201.
+  - Pilotos: Carlos Justiniano, Diana Suárez, Jorge Áñez, Fernando Melgar.
+  - Pasajeros (carnet): Camila 8802345, Valeria 9101001, Julián 9101002.
+  - Empresas (NIT): Transportes del Beni 2045678901, Farmacorp 1055667788.
+  - Vuelos: aterrizados TRP-101..104; en vuelo TRP-201; abordando TRP-202;
+    programados/confirmados TRP-301, TRP-302, TRP-303, TRP-304.
+
+
+======================================================================
+0) DASHBOARD
+======================================================================
+  - Entrá a "Dashboard".
+  - Verás: vuelos totales/activos, flota (1 en mantenimiento), pasajeros,
+    ingresos por ventas pagadas, IVA facturado, ticket promedio y la
+    tendencia de ventas. Sirve como resumen para abrir la presentación.
+
+
+======================================================================
+1) AEROPUERTOS  (Registros -> Aeropuertos)
+======================================================================
+  Crear:
+    - Código OACI: SLYA   IATA: BYC   Nombre: Aeropuerto de Yacuiba
+    - Ciudad: Yacuiba   Departamento: Tarija   Tipo: Aeropuerto
+    - Superficie: Asfalto   Activo: Sí   Pista (m): 2000
+  Verificar: aparece en la lista y se puede editar/eliminar.
+
+
+======================================================================
+2) RUTAS  (Rutas)
+======================================================================
+  Crear:
+    - Origen: El Trompillo (SLET)   Destino: Yacuiba (SLYA)
+    - Distancia: 480   Duración: 90   Precio base (Bs): 680   Activa: Sí
+  Regla a mostrar: si ponés el mismo aeropuerto en origen y destino,
+  el sistema no lo permite.
+
+
+======================================================================
+3) FLOTA / AERONAVES  (Flota -> Aeronaves)
+======================================================================
+  Crear:
+    - Matrícula: CP-3300   Modelo: Cessna 208 Caravan   Fabricante: Cessna
+    - Año: 2019   Cap. pasajeros: 9   Cap. carga (kg): 1300
+    - Peso vacío: 2145   Peso máx. despegue: 3629
+    - Horas vuelo totales: 4000   Estado: Activa
+  Verificar: en el detalle se ve su modelo. La CP-3140 aparece con estado
+  "En mantenimiento".
+
+
+======================================================================
+4) MANTENIMIENTO  (Flota -> Mantenimiento)
+======================================================================
+  Crear:
+    - Aeronave: CP-2521   Técnico: Pedro Melgar
+    - Tipo: Preventivo   Estado: Programado
+    - Descripción: Inspección de 100 horas.
+    - Fecha inicio: 2026-09-01   Costo (Bs): 8000
+  Verificar: la lista muestra los estados con colores (programado,
+  en proceso, completado).
+
+
+======================================================================
+5) PERSONAL  (Personal -> Empleados y Pilotos)
+======================================================================
+  Empleado (crear):
+    - Nombres: Luis Alberto   Apellidos: Roca Áñez   CI: 7822010
+    - Cargo: Copiloto   Teléfono: 70011223   Salario: 9000   Activo: Sí
+  Piloto (crear, DESPUÉS del empleado):
+    - Empleado: Luis Alberto Roca   Licencia: BOL-CPL-2010
+    - Tipo licencia: CPL   Horas vuelo: 1500
+  Regla a mostrar: el CI no se puede repetir.
+
+
+======================================================================
+6) PERSONAS / PASAJEROS  (Registros -> Personas / Pasajeros)
+======================================================================
+  Persona NATURAL (pasajero):
+    - Tipo: Natural   Tipo doc: CI   Nro: 9202020
+    - Nombres: Paola   Apellidos: Vaca Suárez
+    - Datos de pasajero: Nacionalidad Boliviana, Peso 60, contacto emerg.
+  Persona JURÍDICA (empresa):
+    - Tipo: Jurídica   Tipo doc: NIT   Nro: 1088776655
+    - Razón social: Distribuidora del Este S.R.L.   Representante: Ana Paz
+  Mostrar: al elegir Natural/Jurídica cambian los campos; el documento
+  es único; una persona natural queda disponible como pasajero.
+
+
+======================================================================
+7) VUELOS  (Vuelos)
+======================================================================
+  Crear:
+    - Número: TRP-401   Ruta: El Trompillo -> Trinidad
+    - Origen: El Trompillo (SLET)   Destino: Trinidad (SLTR)
+    - Aeronave: CP-2521   Piloto: Carlos Justiniano   (Copiloto: vacío)
+    - Tipo: Regular   Estado: Programado
+    - Salida: 2026-08-15 08:00   Llegada: 2026-08-15 09:30
+    - Asientos: 8   Precio (Bs): 620
+  Reglas a mostrar: origen ≠ destino; llegada no puede ser antes de la salida.
+
+
+======================================================================
+8) RESERVAS  (Reservas)  ***BUSCADOR POR CARNET***
+======================================================================
+  Crear reserva:
+    - Vuelo: TRP-301   Estado: Confirmada
+    - Persona 1 (Carnet): escribí  8802345  -> trae "Camila Andrea Suárez".
+    - Asiento: 3A   Equipaje: 10   (el precio se autocompleta con el del vuelo)
+    - Para probar alta al vuelo: tocá "+ Nueva persona", registrá una nueva
+      con un CI que no exista -> se agrega directo a la reserva.
+    - Dejá el PAGO VACÍO y Guardá.
+  Resultado: la reserva queda PENDIENTE y SIN venta.
+
+
+======================================================================
+9) COBRO DE RESERVA -> VENTA -> FACTURA
+======================================================================
+  - Entrá al detalle de la reserva que acabás de crear.
+  - Usá "Cobrar y generar venta": Monto = precio del vuelo, Método = Efectivo.
+  - Se genera la VENTA (pagada). Desde la venta, "Generar factura".
+  - La FACTURA muestra cliente, subtotal, IVA 13% y total; es imprimible/PDF.
+
+
+======================================================================
+10) CARGA  (Carga)  ***BUSCADOR POR CARNET/NIT***
+======================================================================
+  Crear envío:
+    - Guía: TRP-CG-2001   Vuelo: TRP-301
+    - Doc. remitente: escribí  2045678901  -> trae "Transportes del Beni S.R.L."
+      (o usá "+ Nuevo remitente" para registrar uno nuevo).
+    - Destinatario: Comercial del Norte   Doc: 9001122
+    - Peso: 40   Valor declarado: 3000   Costo envío (Bs): 350   Estado: Recibido
+  Resultado: al guardar, andá a "Ventas" -> aparece una venta pagada de
+  Bs 350 (flete), y su factura a nombre del remitente.
+
+
+======================================================================
+11) OPERACIONES DEL DÍA + CICLO DE VIDA DEL VUELO
+======================================================================
+  (Se puede hacer como ADMIN o como OPERADOR)
+  - Entrá a "Operaciones". Verás el tablero por estado (se refresca solo).
+
+  DESPACHAR (valida peso y balance):
+    - Buscá un vuelo PROGRAMADO/CONFIRMADO (ej. TRP-304 o TRP-301).
+    - "Despachar" -> valida cupo y peso; pasa a ABORDANDO.
+
+  CERRAR (marca usados / no-show):
+    - Vuelo en ABORDANDO (TRP-202) -> "Cerrar" -> pasa a EN VUELO.
+
+  ATERRIZAR (registra llegada real):
+    - Vuelo EN VUELO (TRP-201) -> "Aterrizar" -> pasa a ATERRIZADO.
+
+  CHECK-IN:
+    - En el detalle de una reserva, marcá el check-in de un boleto antes
+      de cerrar su vuelo.
+
+
+======================================================================
+12) VENTAS DE SERVICIOS EXTRA  (Ventas -> Nueva)
+======================================================================
+  - Cliente (Carnet/NIT): escribí 1055667788 -> trae "Farmacorp S.A."
+    (o dejalo vacío = cliente casual).
+  - Ítem: "Exceso de equipaje (8 kg)"   Cantidad: 1   Precio unitario: 120
+  - Estado: Pagada. Luego generá su factura.
+
+
+======================================================================
+13) REPORTES  (Operaciones -> Reporte)
+======================================================================
+  - Elegí un rango de fechas (ej. 2026-07-20 a 2026-08-31) y filtros.
+  - Muestra resumen (vuelos, pasajeros, ingresos, ocupación) y se imprime.
+
+
+======================================================================
+14) ADMINISTRACIÓN + RBAC  (Administración -> Usuarios / Roles)
+======================================================================
+  - Como ADMIN: creá un usuario, asignale un rol, o editá los permisos
+    de un rol (marcá/desmarcá permisos).
+  - Demostración del bloqueo:
+      * Cerrá sesión y entrá como VENDEDOR (ventas@aerolinea.test/password):
+        el menú aparece recortado; entrá a /vuelos por URL -> 403.
+      * Entrá como OPERADOR (operador@aerolinea.test/password):
+        ve Vuelos y Operaciones; entrá a /ventas por URL -> 403.
+
+======================================================================
+Consejo: si al iniciar sesión sale "429 Too Many Requests", esperá un
+minuto (es el límite de intentos de login) y volvé a intentar.
+======================================================================

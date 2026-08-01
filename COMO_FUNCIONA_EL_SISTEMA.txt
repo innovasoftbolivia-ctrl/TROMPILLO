@@ -1,0 +1,149 @@
+======================================================================
+   CÓMO FUNCIONA EL SISTEMA — Aerolínea El Trompillo
+======================================================================
+
+1. QUÉ ES
+----------------------------------------------------------------------
+Sistema de gestión (ERP) para una aerolínea de avionetas con base en
+Santa Cruz de la Sierra, Bolivia. Cubre el ciclo completo: catálogos,
+flota, personal, operación de vuelos, reservas, ventas, facturación,
+carga y control de acceso por roles.
+
+Tecnología:
+  - Backend:   Laravel 11 (PHP 8.3)
+  - Interfaz:  Livewire 3 + Blade + Tailwind CSS + Alpine.js
+  - Base de datos: MySQL 8 (con stored procedures para lo crítico)
+  - Todo corre en Docker (Nginx + PHP-FPM + MySQL + phpMyAdmin)
+  - Moneda: Bolivianos (Bs).  IVA: 13% (incluido en el precio).
+
+Accesos locales:
+  - Aplicación: http://localhost:8080
+  - phpMyAdmin: http://localhost:8081
+  - Usuarios:   ver el archivo USUARIOS_DEL_SISTEMA.txt
+
+
+2. CÓMO LEVANTARLO
+----------------------------------------------------------------------
+  docker compose up -d
+  # Ver los cambios de código (por las cachés de rendimiento):
+  docker compose exec app sh -c "php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache" && docker compose restart app
+  # Recompilar CSS/JS si hace falta:
+  docker compose exec app npm run build
+
+
+3. LOS MÓDULOS (menú lateral por grupos)
+----------------------------------------------------------------------
+  OPERACIÓN
+    - Dashboard: KPIs operativos y comerciales.
+    - Operaciones del día: tablero en vivo de los vuelos por estado.
+    - Vuelos: alta y ciclo de vida del vuelo.
+    - Reservas: reservas con pasajeros y boletos.
+    - Rutas: rutas origen -> destino con precio base.
+    - Carga: envíos/fletes.
+  COMERCIAL
+    - Ventas: ventas (de reservas, carga o servicios extra) + detalle.
+    - Facturas: facturación con IVA e impresión/PDF.
+  FLOTA
+    - Aeronaves: la flota (con sus modelos y especificaciones).
+    - Mantenimiento: mantenimientos por aeronave.
+  PERSONAL
+    - Empleados y Pilotos.
+  REGISTROS
+    - Aeropuertos.
+    - Personas / Pasajeros (naturales o jurídicas).
+  ADMINISTRACIÓN
+    - Usuarios, Roles y Permisos (RBAC).
+
+
+4. PERSONAS Y PASAJEROS (todo es una "persona")
+----------------------------------------------------------------------
+Existe UN solo módulo "Personas / Pasajeros". Una persona puede ser:
+  - NATURAL: individuo. Si además viaja, se le cargan sus datos de
+    pasajero (nacionalidad, peso, contacto de emergencia) y queda
+    disponible como pasajero para las reservas.
+  - JURÍDICA: empresa/cliente (por ejemplo, un cliente de carga).
+
+Buscador por carnet: en Reserva, Venta y Carga, al escribir el número
+de documento (CI/NIT) el sistema TRAE el nombre automáticamente si la
+persona ya existe; si no existe, se puede registrar en el momento sin
+salir del formulario.
+
+
+5. CICLO DE VIDA DEL VUELO
+----------------------------------------------------------------------
+Cada transición es una operación validada (todo-o-nada):
+
+  programado / confirmado
+        |  (Despachar)  -> valida aeronave activa, cupo de pasajeros y
+        v                  PESO Y BALANCE (pax + equipaje + carga <= máximo)
+     abordando
+        |  (Cerrar / despegar) -> registra la salida real; marca boletos:
+        v                          con check-in = usado, sin check-in = no-show
+     en_vuelo
+        |  (Aterrizar) -> registra la llegada real (no anterior a la salida)
+        v
+     aterrizado
+
+Si una regla no se cumple, la operación se cancela por completo y muestra
+el motivo; no queda nada a medias.
+
+
+6. FLUJO DEL DINERO: RESERVA -> COBRO -> VENTA -> FACTURA
+----------------------------------------------------------------------
+Regla de oro: EL DINERO VIVE EN LA VENTA (una sola fuente de verdad).
+
+  RESERVA (operativo)
+    - Reservación del vuelo con uno o varios pasajeros (boletos).
+    - Si se crea SIN pago, queda PENDIENTE y NO genera venta.
+        |
+        |  (Cobrar y generar venta)  <- en el detalle de la reserva
+        v
+  VENTA (comercial) — el ingreso
+    - Se genera al COBRAR la reserva (o automáticamente para la carga).
+    - Tiene detalle (una línea por boleto) y su pago.
+    - Estado: pendiente / pagada / anulada.
+        |
+        |  (Generar factura)
+        v
+  FACTURA (fiscal)
+    - NIT / razón social, subtotal, IVA 13%, total.
+    - Imprimible / PDF.  Se puede anular (no se borra).
+
+Otros orígenes de venta:
+  - CARGA: al registrar un envío, su costo de flete se registra como una
+    venta pagada (y su factura) a nombre del remitente.
+  - SERVICIOS EXTRA: el módulo Ventas permite registrar ventas sueltas
+    (exceso de equipaje, cambios, penalidades).
+
+
+7. CONTROL DE ACCESO (RBAC)
+----------------------------------------------------------------------
+Cada usuario tiene un ROL; cada rol tiene PERMISOS. El menú, las rutas
+y las acciones se filtran por permiso (el bloqueo es real, en el servidor,
+no solo ocultar botones).
+
+  Permisos: vuelos.gestionar, operaciones.despachar, reservas.gestionar,
+            flota.gestionar, mantenimiento.gestionar, personal.gestionar,
+            catalogos.gestionar, reportes.ver, usuarios.gestionar
+
+  Roles de ejemplo:
+    - administrador: todo.
+    - vendedor:      reservas/ventas/carga/facturas + reportes.
+    - operador:      vuelos + despacho + reportes.
+
+
+8. RENDIMIENTO Y SEGURIDAD
+----------------------------------------------------------------------
+  - Respuesta típica por página < 1 segundo (OPcache + cachés de Laravel).
+  - Contraseñas con hash, protección CSRF, límite de intentos de login.
+  - Operaciones críticas (reserva completa, despacho, cierre) se ejecutan
+    en transacciones atómicas mediante stored procedures.
+  - Integridad garantizada con claves foráneas.
+
+
+9. PARA PROBARLO
+----------------------------------------------------------------------
+El sistema ya viene con datos de demostración cargados (aeropuertos,
+flota, vuelos, reservas, ventas, facturas, carga y mantenimientos).
+Ver el archivo COMO_PROBAR_LOS_MODULOS.txt con ejemplos paso a paso.
+======================================================================

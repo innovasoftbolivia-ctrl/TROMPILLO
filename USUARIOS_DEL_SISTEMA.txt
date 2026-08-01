@@ -1,0 +1,61 @@
+======================================================================
+   USUARIOS DEL SISTEMA — Aerolínea El Trompillo
+======================================================================
+
+Acceso a la aplicación:  http://localhost:8080/login
+
+Todos los usuarios comparten la misma contraseña de demostración:
+
+        password
+
+----------------------------------------------------------------------
+1) ADMINISTRADOR  (acceso total)
+----------------------------------------------------------------------
+   Email:       admin@aerolinea.test
+   Contraseña:  password
+   Rol:         administrador
+
+   Puede TODO: catálogos, flota, mantenimiento, operaciones/despacho,
+   personal, reportes, reservas/ventas/carga, vuelos y la
+   administración de usuarios y roles.
+
+----------------------------------------------------------------------
+2) VENDEDOR  (área comercial)
+----------------------------------------------------------------------
+   Email:       ventas@aerolinea.test
+   Contraseña:  password
+   Rol:         vendedor
+   Permisos:    reservas.gestionar, reportes.ver
+
+   SÍ puede:  Reservas, Ventas, Facturas, Carga, Operaciones (ver) y Reportes.
+   NO puede:  Vuelos, Flota, Mantenimiento, Personal, Aeropuertos, Rutas,
+              Personas y Administración (Usuarios/Roles) -> le sale 403 y
+              esas opciones no aparecen en el menú.
+
+----------------------------------------------------------------------
+3) OPERADOR  (operación de vuelos)
+----------------------------------------------------------------------
+   Email:       operador@aerolinea.test
+   Contraseña:  password
+   Rol:         operador
+   Permisos:    vuelos.gestionar, operaciones.despachar, reportes.ver
+
+   SÍ puede:  Vuelos (crear/editar), Panel de Operaciones (despachar,
+              cerrar, aterrizar) y Reportes.
+   NO puede:  Reservas, Ventas, Facturas, Carga, Flota, Personal,
+              Catálogos ni Administración -> 403 y menú filtrado.
+
+----------------------------------------------------------------------
+DEMOSTRAR EL CONTROL DE ACCESO (RBAC) AL DOCENTE
+----------------------------------------------------------------------
+1) Entrá como ADMIN -> mostrá el menú completo (incluida Administración).
+2) Cerrá sesión y entrá como VENDEDOR -> el menú aparece recortado
+   (solo lo comercial).
+3) Con el vendedor logueado, escribí a mano en la URL
+   http://localhost:8080/vuelos  o  /usuarios  -> el sistema BLOQUEA con
+   error 403 (el control es real en el servidor, no solo ocultar botones).
+4) Repetí con OPERADOR: ve Vuelos y Operaciones, pero /ventas le da 403.
+
+Nota: si al iniciar sesión aparece "429 Too Many Requests", es el límite
+de 5 intentos por minuto; esperá un minuto y volvé a intentar.
+======================================================================
