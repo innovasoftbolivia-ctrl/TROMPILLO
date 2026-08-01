@@ -104,6 +104,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         
         Route::get('ventas', VentaIndex::class)->name('ventas.index');
         Route::get('ventas/crear', VentaForm::class)->name('ventas.create');
+        Route::get('ventas/cobrar', \App\Livewire\CobroPendiente::class)->name('ventas.cobrar');
         Route::get('ventas/{venta}', VentaShow::class)->name('ventas.show');
     });
     

@@ -24,14 +24,15 @@
                     @endif
                     <div class="grid grid-cols-12 gap-5">
                         <div class="col-span-6 sm:col-span-4"><label class="block text-sm font-medium mb-1">Guía <span
-                                    class="text-red-500">*</span></label><input wire:model.blur="guia" type="text"
-                                class="form-input w-full">
+                                    class="text-red-500">*</span></label><input wire:model="guia" type="text"
+                                class="form-input w-full bg-gray-100 dark:bg-slate-700/60 cursor-not-allowed" readonly>
                             @error('guia')
                                 <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                             @enderror
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Se asigna automáticamente</p>
                         </div>
                         <div class="col-span-12 sm:col-span-4"><label
-                                class="block text-sm font-medium mb-1">Vuelo</label><select wire:model="vuelo_id"
+                                class="block text-sm font-medium mb-1">Vuelo</label><select wire:model.live="vuelo_id"
                                 class="form-select w-full">
                                 <option value="">— Sin asignar —</option>
                                 @foreach ($vuelos as $v)
@@ -78,7 +79,7 @@
                             <textarea wire:model.blur="descripcion" class="form-textarea w-full" rows="2"></textarea>
                         </div>
                         <div class="col-span-4"><label class="block text-sm font-medium mb-1">Peso (kg) <span
-                                    class="text-red-500">*</span></label><input wire:model.blur="peso_kg" type="number"
+                                    class="text-red-500">*</span></label><input wire:model.live.debounce.500ms="peso_kg" type="number"
                                 step="0.1" class="form-input w-full">
                             @error('peso_kg')
                                 <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
@@ -92,11 +93,13 @@
                             @enderror
                         </div>
                         <div class="col-span-4"><label class="block text-sm font-medium mb-1">Costo envío <span
-                                    class="text-red-500">*</span></label><input wire:model.blur="costo_envio"
-                                type="number" step="0.01" class="form-input w-full">
+                                    class="text-red-500">*</span></label><input wire:model="costo_envio"
+                                type="number" step="0.01"
+                                class="form-input w-full bg-gray-100 dark:bg-slate-700/60 cursor-not-allowed" readonly>
                             @error('costo_envio')
                                 <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                             @enderror
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Peso × distancia, siempre menor al boleto</p>
                         </div>
                     </div>
                     <div class="flex items-center justify-end gap-3 mt-8 pt-5 border-t border-gray-200 /60"> <a

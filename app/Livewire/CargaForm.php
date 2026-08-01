@@ -44,6 +44,75 @@ class CargaForm extends Component
     public string $nr_telefono = '';
     public string $nr_email = '';
 
+    /** Tarifa del flete por kilogramo y por kilómetro (Bs). */
+    private const TARIFA_KG_KM = 0.008;
+
+    /** El flete nunca supera esta fracción del precio del boleto (queda por debajo). */
+    private const TOPE_FRACCION_BOLETO = 0.90;
+
+    public function updatedVueloId(): void
+    {
+        $this->calcularCostoEnvio();
+    }
+
+    public function updatedPesoKg(): void
+    {
+        $this->calcularCostoEnvio();
+    }
+
+    /**
+     * Costo del flete = peso (kg) × distancia de la ruta (km) × tarifa,
+     * pero siempre por debajo del precio del boleto de ese vuelo.
+     */
+    private function calcularCostoEnvio(): void
+    {
+        $peso = (float) $this->peso_kg;
+
+        if (! $this->vuelo_id || $peso <= 0) {
+            return;
+        }
+
+        $vuelo = Vuelo::with(['ruta', 'origen', 'destino'])->find($this->vuelo_id);
+        if (! $vuelo) {
+            return;
+        }
+
+        // Distancia: de la ruta si existe; si no, por coordenadas origen/destino.
+        $distancia = (float) ($vuelo->ruta->distancia_km ?? 0);
+        if ($distancia <= 0) {
+            $distancia = $this->distanciaEntre($vuelo->origen, $vuelo->destino);
+        }
+        if ($distancia <= 0) {
+            return;
+        }
+
+        $costo = $peso * $distancia * self::TARIFA_KG_KM;
+
+        // Tope: el flete debe ser MENOR que el precio del boleto del vuelo.
+        $precioBoleto = (float) ($vuelo->precio ?? 0);
+        if ($precioBoleto > 0) {
+            $costo = min($costo, $precioBoleto * self::TOPE_FRACCION_BOLETO);
+        }
+
+        $this->costo_envio = (string) round($costo, 2);
+    }
+
+    /** Distancia Haversine (km) entre dos aeropuertos, por sus coordenadas. */
+    private function distanciaEntre($a, $b): float
+    {
+        if (! $a || ! $b || $a->latitud === null || $b->latitud === null) {
+            return 0;
+        }
+
+        $r = 6371;
+        $dLat = deg2rad((float) $b->latitud - (float) $a->latitud);
+        $dLon = deg2rad((float) $b->longitud - (float) $a->longitud);
+        $h = sin($dLat / 2) ** 2
+            + cos(deg2rad((float) $a->latitud)) * cos(deg2rad((float) $b->latitud)) * sin($dLon / 2) ** 2;
+
+        return round(2 * $r * asin(min(1, sqrt($h))));
+    }
+
     // Buscador inline: al escribir el documento del remitente, trae su nombre si existe.
     public function updatedRemitenteDocumento(): void
     {
@@ -99,6 +168,26 @@ class CargaForm extends Component
         session()->flash('success', 'Remitente creado y cargado.');
     }
 
+    /**
+     * Genera la siguiente guía de carga (formato TRP-CG-####) tomando el mayor
+     * correlativo existente y sumándole 1. Así no se escribe a mano.
+     */
+    private function proximaGuia(string $prefijo = 'TRP-CG-'): string
+    {
+        $max = EnvioCarga::where('guia', 'like', $prefijo . '%')
+            ->get('guia')
+            ->map(fn ($e) => (int) preg_replace('/\D/', '', str_replace($prefijo, '', $e->guia)))
+            ->max();
+
+        $siguiente = ($max ?? 1000) + 1;
+
+        while (EnvioCarga::where('guia', $prefijo . str_pad((string) $siguiente, 4, '0', STR_PAD_LEFT))->exists()) {
+            $siguiente++;
+        }
+
+        return $prefijo . str_pad((string) $siguiente, 4, '0', STR_PAD_LEFT);
+    }
+
     public function mount($carga = null): void
     {
         if ($carga) {
@@ -115,6 +204,9 @@ class CargaForm extends Component
             $this->valor_declarado = (string) ($envio->valor_declarado ?? 0);
             $this->costo_envio = (string) ($envio->costo_envio ?? 0);
             $this->estado = $envio->estado ?? 'registrado';
+        } else {
+            // Nuevo envío: la guía se asigna automáticamente.
+            $this->guia = $this->proximaGuia();
         }
     }
 
@@ -137,6 +229,11 @@ class CargaForm extends Component
 
     public function guardar()
     {
+        // La guía es automática: si es un envío nuevo sin guía, la generamos.
+        if (! $this->envio && trim($this->guia) === '') {
+            $this->guia = $this->proximaGuia();
+        }
+
         $this->validate();
         try {
             DB::transaction(function () {

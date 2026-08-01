@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Livewire\Concerns\CreaPersonas;
+use App\Models\Boleto;
 use App\Models\Pasajero;
 use App\Models\Reserva;
 use App\Models\Vuelo;
@@ -288,11 +289,76 @@ class ReservaForm extends Component
         }
     }
 
+    /** Asigna/quita un asiento haciendo clic en el mapa. */
+    public function elegirAsiento(string $codigo): void
+    {
+        $codigo = strtoupper($codigo);
+        if (! $this->vuelo_id) {
+            return;
+        }
+        // Ocupado por otra reserva -> no se puede.
+        if (Boleto::where('vuelo_id', $this->vuelo_id)->whereRaw('UPPER(asiento) = ?', [$codigo])->exists()) {
+            return;
+        }
+        // Ya seleccionado en esta reserva -> lo libera.
+        foreach ($this->boletos as $i => $b) {
+            if (strtoupper((string) ($b['asiento'] ?? '')) === $codigo) {
+                $this->boletos[$i]['asiento'] = '';
+                return;
+            }
+        }
+        // Lo asigna al primer pasajero que no tenga asiento.
+        foreach ($this->boletos as $i => $b) {
+            if (empty($b['asiento'])) {
+                $this->boletos[$i]['asiento'] = $codigo;
+                return;
+            }
+        }
+    }
+
+    /** Construye el mapa de asientos del avión del vuelo elegido. */
+    protected function mapaAsientos(): ?array
+    {
+        if (! $this->vuelo_id) {
+            return null;
+        }
+        $vuelo = Vuelo::with('aeronave')->find($this->vuelo_id);
+        $cap = (int) ($vuelo?->aeronave?->capacidad_pasajeros ?? 0);
+        if ($cap <= 0) {
+            return null;
+        }
+
+        $ocupados = Boleto::where('vuelo_id', $this->vuelo_id)->pluck('asiento')
+            ->filter()->map(fn ($a) => strtoupper($a))->all();
+        $seleccionados = collect($this->boletos)->pluck('asiento')
+            ->filter()->map(fn ($a) => strtoupper($a))->all();
+
+        $letras = ['A', 'B', 'C', 'D'];
+        $porFila = 3;
+        $filas = [];
+        $n = 0;
+        $fila = 1;
+        while ($n < $cap) {
+            $celdas = [];
+            for ($i = 0; $i < $porFila && $n < $cap; $i++, $n++) {
+                $codigo = $fila . $letras[$i];
+                $estado = in_array($codigo, $ocupados) ? 'ocupado'
+                    : (in_array($codigo, $seleccionados) ? 'seleccionado' : 'libre');
+                $celdas[] = ['codigo' => $codigo, 'letra' => $letras[$i], 'estado' => $estado];
+            }
+            $filas[] = ['num' => $fila, 'celdas' => $celdas];
+            $fila++;
+        }
+
+        return ['filas' => $filas, 'matricula' => $vuelo->aeronave->matricula, 'capacidad' => $cap];
+    }
+
     public function render()
     {
         return view('livewire.reserva-form', [
             'vuelos' => Vuelo::with(['origen', 'destino'])->whereIn('estado', ['programado', 'retrasado', 'confirmado'])->orderByDesc('salida_programada')->get(),
             'pasajeros' => Pasajero::orderBy('apellidos')->get(),
+            'mapa' => $this->mapaAsientos(),
         ]);
     }
 }

@@ -59,11 +59,16 @@ class PdfController extends Controller
     public function imprimirFactura(Factura $factura)
     {
         Gate::authorize('reservas.gestionar');
-        
-        $factura->load(['venta.reserva', 'venta.cliente', 'usuario']);
-        
-        $pdf = Pdf::loadView('pdf.factura', compact('factura'));
-        
-        return $pdf->stream('Factura_' . $factura->numero . '.pdf');
+
+        $factura->load([
+            'venta.reserva',
+            'venta.detalles.boleto',
+            'venta.vendedor',
+            'persona',
+        ]);
+
+        $pdf = Pdf::loadView('pdf.factura', compact('factura'))->setPaper('letter');
+
+        return $pdf->stream('Factura_' . $factura->numero_factura . '.pdf');
     }
 }

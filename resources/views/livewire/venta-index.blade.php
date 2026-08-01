@@ -4,8 +4,15 @@
             <div class="mb-4 sm:mb-0">
                 <h1 class="text-2xl md:text-3xl font-bold">Ventas 💰</h1>
                 <p class="text-sm text-gray-500 mt-1">Registro de ventas y facturación.</p>
-            </div> <a href="{{ route('ventas.create') }}" class="btn bg-emerald-500 hover:bg-emerald-600 text-white"><span
-                    class="ml-2">Nueva Venta Directa</span></a>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('ventas.cobrar') }}" class="btn border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10">
+                    <span class="ml-1">Cobrar reserva pendiente</span>
+                </a>
+                <a href="{{ route('ventas.create') }}" class="btn bg-emerald-500 hover:bg-emerald-600 text-white">
+                    <span class="ml-1">Nueva Venta Directa</span>
+                </a>
+            </div>
         </div>
         @if ($flashOk)
             <div class="mb-6 px-4 py-3 rounded-lg text-sm bg-green-500/15 text-green-700 flex justify-between"

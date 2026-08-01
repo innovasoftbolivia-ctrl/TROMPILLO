@@ -20,8 +20,10 @@
                 @endif
                 <div class="grid grid-cols-12 gap-6"> <!-- Info principal -->
                     <div class="col-span-12 sm:col-span-3"><label class="block text-sm font-medium mb-1">Nro.
-                            Vuelo</label><input wire:model.blur="numero_vuelo" type="text" class="form-input w-full"
-                            placeholder="OPCIONAL"></div>
+                            Vuelo</label><input wire:model="numero_vuelo" type="text"
+                            class="form-input w-full bg-gray-100 dark:bg-slate-700/60 cursor-not-allowed" readonly>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Se asigna automáticamente</p>
+                    </div>
                     <div class="col-span-12 sm:col-span-3"><label class="block text-sm font-medium mb-1">Tipo <span
                                 class="text-red-500">*</span></label><select wire:model="tipo"
                             class="form-select w-full">
@@ -41,34 +43,31 @@
                             <option value="cancelado">Cancelado</option>
                             <option value="retrasado">Retrasado</option>
                         </select></div>
-                    <div class="col-span-12 sm:col-span-3"><label
-                            class="block text-sm font-medium mb-1">Ruta</label><select wire:model="ruta_id"
+                    <div class="col-span-12 sm:col-span-6"><label class="block text-sm font-medium mb-1">Ruta <span
+                                class="text-red-500">*</span></label><select wire:model.live="ruta_id"
                             class="form-select w-full">
-                            <option value="">— Ninguna —</option>
+                            <option value="">— Seleccionar ruta —</option>
                             @foreach ($rutas as $r)
-                                <option value="{{ $r->id }}">{{ $r->origen->codigo_iata }} →
-                                    {{ $r->destino->codigo_iata }}</option>
+                                <option value="{{ $r->id }}">{{ $r->origen->ciudad }} ({{ $r->origen->codigo_iata }})
+                                    → {{ $r->destino->ciudad }} ({{ $r->destino->codigo_iata }})</option>
                             @endforeach
                         </select>
-                    </div> <!-- Origen/Destino -->
-                    <div class="col-span-12 sm:col-span-6"><label class="block text-sm font-medium mb-1">Origen <span
-                                class="text-red-500">*</span></label><select wire:model="origen_id"
-                            class="form-select w-full">
-                            <option value="">— Seleccionar —</option>
-                            @foreach ($aeropuertos as $a)
-                                <option value="{{ $a->id }}">{{ $a->ciudad }} ({{ $a->codigo_iata }})</option>
-                            @endforeach
-                        </select>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Define el origen, el destino y el precio</p>
                     </div>
-                    <div class="col-span-12 sm:col-span-6"><label class="block text-sm font-medium mb-1">Destino <span
-                                class="text-red-500">*</span></label><select wire:model="destino_id"
-                            class="form-select w-full">
-                            <option value="">— Seleccionar —</option>
-                            @foreach ($aeropuertos as $a)
-                                <option value="{{ $a->id }}">{{ $a->ciudad }} ({{ $a->codigo_iata }})
-                                </option>
-                            @endforeach
-                        </select>
+                    @php
+                        $orig = $aeropuertos->firstWhere('id', (int) $origen_id);
+                        $dest = $aeropuertos->firstWhere('id', (int) $destino_id);
+                    @endphp
+                    <!-- Origen/Destino (derivados de la ruta, solo lectura) -->
+                    <div class="col-span-6 sm:col-span-3"><label class="block text-sm font-medium mb-1">Origen</label>
+                        <div class="form-input w-full bg-gray-100 dark:bg-slate-700/60 text-gray-600 dark:text-gray-300 flex items-center min-h-[38px]">
+                            {{ $orig ? $orig->ciudad . ' (' . $orig->codigo_iata . ')' : '—' }}
+                        </div>
+                    </div>
+                    <div class="col-span-6 sm:col-span-3"><label class="block text-sm font-medium mb-1">Destino</label>
+                        <div class="form-input w-full bg-gray-100 dark:bg-slate-700/60 text-gray-600 dark:text-gray-300 flex items-center min-h-[38px]">
+                            {{ $dest ? $dest->ciudad . ' (' . $dest->codigo_iata . ')' : '—' }}
+                        </div>
                     </div> <!-- Fechas Programadas -->
                     <div class="col-span-12 sm:col-span-6"><label class="block text-sm font-medium mb-1">Salida
                             programada <span class="text-red-500">*</span></label><input wire:model="salida_programada"
@@ -84,31 +83,34 @@
                             class="form-input w-full"></div> <!-- Comercial -->
                     <div class="col-span-12 sm:col-span-6"><label class="block text-sm font-medium mb-1">Asientos
                             disponibles <span class="text-red-500">*</span></label><input
-                            wire:model.blur="asientos_disponibles" type="number" class="form-input w-full"></div>
+                            wire:model.blur="asientos_disponibles" type="number" class="form-input w-full">
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Se completa con la capacidad de la aeronave</p>
+                    </div>
                     <div class="col-span-12 sm:col-span-6"><label class="block text-sm font-medium mb-1">Precio boleto
                             (Bs) <span class="text-red-500">*</span></label><input wire:model.blur="precio"
-                            type="number" step="0.01" class="form-input w-full"></div>
+                            type="number" step="0.01" class="form-input w-full">
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Se toma del precio base de la ruta</p>
+                    </div>
                     <!-- Tripulación & Aeronave preasignada -->
-                    <div class="col-span-12 sm:col-span-4"><label class="block text-sm font-medium mb-1">Aeronave
-                            (opcional)</label><select wire:model="aeronave_id" class="form-select w-full">
-                            <option value="">— Sin preasignar —</option>
+                    <div class="col-span-12 sm:col-span-4"><label class="block text-sm font-medium mb-1">Aeronave <span
+                                class="text-red-500">*</span></label><select wire:model.live="aeronave_id" class="form-select w-full">
+                            <option value="">— Seleccionar —</option>
                             @foreach ($aeronaves as $a)
                                 <option value="{{ $a->id }}">{{ $a->matricula }} ({{ $a->modelo }})
                                 </option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-span-12 sm:col-span-4"><label class="block text-sm font-medium mb-1">Piloto
-                            (opcional)</label><select wire:model="piloto_id" class="form-select w-full">
-                            <option value="">— Sin preasignar —</option>
+                    <div class="col-span-12 sm:col-span-4"><label class="block text-sm font-medium mb-1">Piloto <span
+                                class="text-red-500">*</span></label><select wire:model="piloto_id" class="form-select w-full">
+                            <option value="">— Seleccionar —</option>
                             @foreach ($pilotos as $p)
                                 <option value="{{ $p->id }}">{{ $p->empleado->nombres }}
                                     {{ $p->empleado->apellidos }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-span-12 sm:col-span-4"><label class="block text-sm font-medium mb-1">Copiloto
-                            (opcional)</label><select wire:model="copiloto_id" class="form-select w-full">
+                    <div class="col-span-12 sm:col-span-4"><label class="block text-sm font-medium mb-1">Copiloto</label><select wire:model="copiloto_id" class="form-select w-full">
                             <option value="">— Sin preasignar —</option>
                             @foreach ($pilotos as $p)
                                 <option value="{{ $p->id }}">{{ $p->empleado->nombres }}

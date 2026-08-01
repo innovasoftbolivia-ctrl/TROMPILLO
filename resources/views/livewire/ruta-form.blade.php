@@ -22,10 +22,10 @@
                             </ul>
                         </div> @endif <div class="grid grid-cols-12 gap-5">
                             <div class="col-span-12 sm:col-span-6"> <label class="block text-sm font-medium mb-1">Origen
-                                    <span class="text-red-500">*</span></label> <select wire:model="origen_id"
+                                    <span class="text-red-500">*</span></label> <select wire:model.live="origen_id"
                                     class="form-select w-full">
                                     <option value="">— Seleccionar —</option>
-                                    @foreach ($aeropuertos as $a)
+                                    @foreach ($origenes as $a)
                                         <option value="{{ $a->id }}">{{ $a->ciudad }} ({{ $a->codigo_oaci }})
                                         </option>
                                     @endforeach
@@ -35,7 +35,7 @@
                             </div>
                             <div class="col-span-12 sm:col-span-6"> <label
                                     class="block text-sm font-medium mb-1">Destino <span
-                                        class="text-red-500">*</span></label> <select wire:model="destino_id"
+                                        class="text-red-500">*</span></label> <select wire:model.live="destino_id"
                                     class="form-select w-full">
                                     <option value="">— Seleccionar —</option>
                                     @foreach ($aeropuertos as $a)
@@ -48,24 +48,30 @@
                             </div>
                             <div class="col-span-6 sm:col-span-4"> <label
                                     class="block text-sm font-medium mb-1">Distancia (km)</label> <input
-                                    wire:model.blur="distancia_km" type="number" class="form-input w-full"
-                                    placeholder="450"> @error('distancia_km')
+                                    wire:model="distancia_km" type="number"
+                                    class="form-input w-full bg-gray-100 dark:bg-slate-700/60 cursor-not-allowed"
+                                    placeholder="—" readonly> @error('distancia_km')
                                     <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                                 @enderror
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Se calcula por coordenadas</p>
                             </div>
                             <div class="col-span-6 sm:col-span-4"> <label
                                     class="block text-sm font-medium mb-1">Duración (min)</label> <input
-                                    wire:model.blur="duracion_estimada_min" type="number" class="form-input w-full"
-                                    placeholder="90"> @error('duracion_estimada_min')
+                                    wire:model="duracion_estimada_min" type="number"
+                                    class="form-input w-full bg-gray-100 dark:bg-slate-700/60 cursor-not-allowed"
+                                    placeholder="—" readonly> @error('duracion_estimada_min')
                                     <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                                 @enderror
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Estimada según la distancia</p>
                             </div>
                             <div class="col-span-6 sm:col-span-4"> <label class="block text-sm font-medium mb-1">Precio
                                     base (Bs) <span class="text-red-500">*</span></label> <input
-                                    wire:model.blur="precio_base" type="number" step="0.01"
-                                    class="form-input w-full" placeholder="350"> @error('precio_base')
+                                    wire:model="precio_base" type="number" step="0.01"
+                                    class="form-input w-full bg-gray-100 dark:bg-slate-700/60 cursor-not-allowed"
+                                    placeholder="—" readonly> @error('precio_base')
                                     <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                                 @enderror
+                                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Se calcula según la distancia</p>
                             </div>
                             <div class="col-span-6 sm:col-span-4"> <label
                                     class="block text-sm font-medium mb-1">Activa</label> <select wire:model="activa"

@@ -54,18 +54,78 @@ class VueloForm extends Component
             $this->precio = (string) ($vuelo->precio ?? 0);
             $this->estado = $vuelo->estado ?? 'programado';
             $this->observaciones = $vuelo->observaciones ?? '';
+        } else {
+            // Nuevo vuelo: numeramos automáticamente siguiendo el orden existente.
+            $this->numero_vuelo = $this->proximoNumeroVuelo();
         }
+    }
+
+    /**
+     * Al elegir una ruta, autocompleta el precio del boleto con el precio base
+     * establecido en la ruta, y también su origen y destino.
+     */
+    public function updatedRutaId($value): void
+    {
+        if (! $value) {
+            return;
+        }
+
+        $ruta = Ruta::find($value);
+
+        if ($ruta) {
+            $this->precio = (string) $ruta->precio_base;
+            $this->origen_id = (string) $ruta->origen_id;
+            $this->destino_id = (string) $ruta->destino_id;
+        }
+    }
+
+    /**
+     * Al elegir una aeronave, autocompleta los asientos disponibles con la
+     * capacidad de pasajeros de esa aeronave.
+     */
+    public function updatedAeronaveId($value): void
+    {
+        if (! $value) {
+            return;
+        }
+
+        $capacidad = Aeronave::whereKey($value)->value('capacidad_pasajeros');
+
+        if ($capacidad !== null) {
+            $this->asientos_disponibles = (string) $capacidad;
+        }
+    }
+
+    /**
+     * Genera el siguiente número de vuelo (formato TRP-###) tomando el
+     * mayor correlativo existente y sumándole 1. Así el usuario no lo escribe.
+     */
+    private function proximoNumeroVuelo(string $prefijo = 'TRP-'): string
+    {
+        $max = Vuelo::where('numero_vuelo', 'like', $prefijo . '%')
+            ->get('numero_vuelo')
+            ->map(fn ($v) => (int) preg_replace('/\D/', '', str_replace($prefijo, '', $v->numero_vuelo)))
+            ->max();
+
+        $siguiente = ($max ?? 100) + 1;
+
+        // Evita colisiones si ese número ya estuviera tomado.
+        while (Vuelo::where('numero_vuelo', $prefijo . str_pad((string) $siguiente, 3, '0', STR_PAD_LEFT))->exists()) {
+            $siguiente++;
+        }
+
+        return $prefijo . str_pad((string) $siguiente, 3, '0', STR_PAD_LEFT);
     }
 
     public function rules(): array
     {
         return [
             'numero_vuelo' => ['nullable', 'string', 'max:15'],
-            'ruta_id' => ['nullable', 'exists:rutas,id'],
+            'ruta_id' => [$this->vuelo ? 'nullable' : 'required', 'exists:rutas,id'],
             'origen_id' => ['required', 'exists:aeropuertos,id'],
             'destino_id' => ['required', 'exists:aeropuertos,id', 'different:origen_id'],
-            'aeronave_id' => ['nullable', 'exists:aeronaves,id'],
-            'piloto_id' => ['nullable', 'exists:pilotos,id'],
+            'aeronave_id' => ['required', 'exists:aeronaves,id'],
+            'piloto_id' => ['required', 'exists:pilotos,id'],
             'copiloto_id' => ['nullable', 'exists:pilotos,id', 'different:piloto_id'],
             'tipo' => ['required', 'in:regular,charter,carga,ambulancia'],
             'salida_programada' => ['required', 'date'],
@@ -79,9 +139,27 @@ class VueloForm extends Component
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'ruta_id.required' => 'Seleccioná una ruta (define origen, destino y precio).',
+            'origen_id.required' => 'Elegí una ruta para definir el origen.',
+            'destino_id.required' => 'Elegí una ruta para definir el destino.',
+            'aeronave_id.required' => 'Seleccioná la aeronave.',
+            'piloto_id.required' => 'Seleccioná el piloto.',
+        ];
+    }
+
     public function guardar()
     {
         $this->validate();
+
+        // El número es automático: si es un vuelo nuevo y no hay número (o quedó
+        // vacío), generamos el siguiente correlativo justo antes de guardar.
+        if (! $this->vuelo && trim($this->numero_vuelo) === '') {
+            $this->numero_vuelo = $this->proximoNumeroVuelo();
+        }
+
         $dt = fn ($c) => ! empty($c) ? \Carbon\Carbon::parse($c)->format('Y-m-d H:i:s') : null;
         try {
             if ($this->vuelo) {
